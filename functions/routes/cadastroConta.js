@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../postgres");
 const { format, parseISO } = require("date-fns");
+const bcrypt = require('bcrypt');
 
 // retorna todos os usuarios
 router.get("/", (req, res, next) => {
@@ -27,7 +28,7 @@ console.log("Fora: "+data2) */
 // insere um novo cadastro
 router.post("/", async (req, res, next) => {
   let data = format(new Date(), "yyyy-MM-dd HH:mm:ss");
-  console.log(data);
+  let senhaCripto = await CriptoSenha(req.body.senha);
 
   try {
     const insert = await pool.query(
@@ -37,13 +38,13 @@ router.post("/", async (req, res, next) => {
         req.body.filial,
         removeCharSpecial(req.body.nome),
         req.body.email,
-        req.body.senha,
+        senhaCripto,
         req.body.ddd,
         req.body.telefone,
         req.body.delete
       ]
     );
-    console.log("Insert: ",insert);
+    //console.log("Insert: ",insert);
     return res.status(200).send({ mensagem: "Conta cadastrada com sucesso." });
   } catch (err) {
     return res.status(400).send(console.log(err));
@@ -128,6 +129,15 @@ function removeCharSpecial(text) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
   return newText;
+}
+
+// função para criptografar a senha informada pelo usuario
+async function CriptoSenha(text) {
+
+  //console.log("CriptoSenha 1: " , text)
+  const senhaAux = bcrypt.hash(text, 10)
+  //console.log("CriptoSenha 2: " , senhaAux)
+  return (await senhaAux).trim();
 }
 
 module.exports = router;
