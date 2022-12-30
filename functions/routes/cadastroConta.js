@@ -29,18 +29,26 @@ console.log("Fora: "+data2) */
 router.post("/", async (req, res, next) => {
   let data = format(new Date(), "yyyy-MM-dd HH:mm:ss");
   let senhaCripto = await CriptoSenha(req.body.senha);
+  let telefoneFix = trataTelefone(req.body.telefone);
+  let telefoneCelular = trataTelefone(req.body.celular);
+  let dddTelefoneFixo = retornaDdd(req.body.telefone);
+  let dddCelular = retornaDdd(req.body.celular);
+  console.log("Telefone Fixo dnddndndndnd: ",telefoneFix);
+  console.log("Telefone Celu dnddndndndnd: ",telefoneCelular); 
 
   try {
     const insert = await pool.query(
-      "INSERT INTO usuarios (empresa, filial, nome, email, senha, ddd, telefone, delete) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *",
+      "INSERT INTO usuarios (empresa, filial, nome, email, senha, ddd, telefone, ddd2, celular, delete) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *",
       [
         req.body.empresa,
         req.body.filial,
         removeCharSpecial(req.body.nome),
         req.body.email,
         senhaCripto,
-        req.body.ddd,
-        req.body.telefone,
+        dddTelefoneFixo,
+        telefoneFix,
+        dddCelular,
+        telefoneCelular,
         req.body.delete
       ]
     );
@@ -138,6 +146,70 @@ async function CriptoSenha(text) {
   const senhaAux = bcrypt.hash(text, 10)
   //console.log("CriptoSenha 2: " , senhaAux)
   return (await senhaAux).trim();
+}
+
+
+/*
+  Função para tratar o numero do telefone que vem no formato (62)993497695
+*/
+function trataTelefone(numeroTelefone) {
+  var numeroTelefoneTexto = "";
+  var numeroTelefoneTratado = "";
+/*   console.log("Numero do telefone 01: ", numeroTelefone);
+  console.log("typeof: ", typeof(numeroTelefone)); */
+
+  // se nao informou o numero retorna.
+  if (!numeroTelefone.trim()) {
+    return numeroTelefone
+  }
+
+  if (typeof(numeroTelefone) === "number") {
+
+    numeroTelefoneTexto = numeroTelefone.toString();
+    numeroTelefoneTratado = numeroTelefoneTexto.replace("(", "");
+    numeroTelefoneTratado = numeroTelefoneTratado.replace(")", "");
+
+  } else if (typeof(numeroTelefone.trim()) === "string"){
+
+    numeroTelefoneTratado = numeroTelefone.replace("(", "");
+    numeroTelefoneTratado = numeroTelefoneTratado.replace(")", "");
+    numeroTelefoneTratado = numeroTelefoneTratado.replace("-", "");
+    numeroTelefoneTratado = numeroTelefoneTratado.replace(".", "");
+    numeroTelefoneTratado = numeroTelefoneTratado.substring(2,15)
+
+  } else {
+
+    //                       993497695
+    numeroTelefoneTratado = "999999999";
+
+  }
+
+  return numeroTelefoneTratado;
+}
+
+/*
+  Função para retornar o DDD do numero informado
+*/
+function retornaDdd(telefoneTexto) {
+  var ddd = "";
+  console.log("DDD do telefone 01: ", telefoneTexto.trim());
+
+  if (!telefoneTexto.trim()) {
+    return telefoneTexto;
+  }
+
+  ddd = telefoneTexto.replace("(", "");
+  ddd = ddd.replace(")", "");
+  ddd = ddd.substring(0,2)
+  telefoneTexto = ddd;
+  if (typeof(telefoneTexto) === "string") {
+    ddd = telefoneTexto.trim().substring(0,2);
+  } else {
+    ddd = "99";
+  }
+
+  return ddd;
+
 }
 
 module.exports = router;
