@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../postgres");
-const { format, parseISO } = require("date-fns");
+const { format } = require("date-fns");
 const bcrypt = require("bcrypt");
 
 // retorna todos os usuarios
@@ -28,17 +28,14 @@ console.log("Fora: "+data2) */
 // insere um novo cadastro
 router.post("/", async (req, res, next) => {
   let data = format(new Date(), "yyyy-MM-dd HH:mm:ss");
-  let senhaCripto = bcrypt.hashSync(req.body.senha, 10); //await CriptoSenha(req.body.senha);
+  const senhaCripto = bcrypt.hashSync(req.body.senha, 10); //await CriptoSenha(req.body.senha);
   let telefoneFix = trataTelefone(req.body.telefone);
   let telefoneCelular = trataTelefone(req.body.celular);
   let dddTelefoneFixo = retornaDdd(req.body.telefone);
   let dddCelular = retornaDdd(req.body.celular);
-  /* console.log("Telefone Fixo dnddndndndnd: ",telefoneFix);
-  console.log("Telefone Celu dnddndndndnd: ",telefoneCelular);  */
+  
   console.log("Nome: ", req.body.nome);
 
-  //console.log("Senha: ", senhaCripto);
-  //console.log("Telefone 2 ", req.body.telefone.trim());
   if (!req.body.telefone) {
     // se não tiver telefone fixo... grava o numero do celular.
     telefoneFix = trataTelefone(req.body.celular);
@@ -61,8 +58,9 @@ router.post("/", async (req, res, next) => {
         req.body.delete,
       ]
     );
-    //console.log("Insert: ",insert);
+
     return res.status(200).send({ mensagem: "Conta cadastrada com sucesso." });
+
   } catch (err) {
     return res.status(400).send(console.log(err));
   }
@@ -141,48 +139,50 @@ router.delete("/", async (req, res, next) => {
   }
 });
 
+/*
+  Rota para validar se o usuario e senha informado na tela de login esta valido no banco de dados.
+*/
+router.post("/login", async (req, res) => {
+  const senhaLoginFormulario = req.body.senha;
+  const emailLoginFormulario = req.body.email;
+  if (!emailLoginFormulario.trim()) {
+    return res.status(400).json({mensagem: 'E-mail obrigatório'});
+  } else if (!senhaLoginFormulario.trim()) {
+    return res.status(400).json({mensagem: 'Senha obrigatório'});
+  }
+  try {
+    let login = await pool.query(
+      "SELECT id, created_at, empresa, filial, nome, email, senha, ddd, telefone, delete FROM usuarios WHERE delete = false AND email = $1",
+      [req.body.email]
+    );
 
-  router.post("/login", async (req, res) => {
-    try {
-      let login = await pool.query(
-        "SELECT id, created_at, empresa, filial, nome, email, senha, ddd, telefone, delete FROM usuarios WHERE delete = false AND email = $1",
-        [req.body.email]
-      );
-      //console.log("Query: ", login);
-      if (login.rows.length < 1) {
-        return res.status(401).send({ mensagem: "Falha na autenticação" });
-      }
-      const { senha, email } = login.rows[0];
-      const autorizado = bcrypt.compareSync(senhaDoForm, senha);
-      
-      if (autorizado === false) {
-        return res.status(401).send({ mensagem: "Falha na autenticação" });
-      }
-      //console.log("Resultado: ", typeof autorizado);
-      if (autorizado) {
-        return res.status(200).send({ mensagem: "Autenticado com sucesso" });
-      }
+    if (login.rows.length < 1) {
       return res.status(401).send({ mensagem: "Falha na autenticação" });
-    } catch (erro) {
-      console.log("Erro: ", erro);
-      return res.status(500).send({ error: erro });
     }
-  });
+    const { senha, email } = login.rows[0];
+    const autorizado = bcrypt.compareSync(senhaLoginFormulario, senha);
 
+    if (!autorizado) {
+      return res.status(401).send({ mensagem: "Falha na autenticação" });
+    }
+
+    if (autorizado) {
+      return res.status(200).send({ mensagem: "Autenticado com sucesso" });
+    }
+    return res.status(401).send({ mensagem: "Falha na autenticação" });
+  } catch (erro) {
+    return res.status(500).send({ error: erro });
+  }
+});
+
+/*
+  Função para remover caracter especial de campos textos.
+*/
 function removeCharSpecial(text) {
   var newText = String(text)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
   return newText;
-}
-
-// Função para criptografar a senha informada pelo usuario
-async function CriptoSenha(text) {
-  //console.log("CriptoSenha 1: " , text)
-  const salt = bcrypt.genSaltSync(10);
-  const senhaAux = await bcrypt.hashSync(text, salt);
-  //console.log("CriptoSenha 2: " , senhaAux)
-  return (senhaAux);
 }
 
 /*
@@ -191,8 +191,6 @@ async function CriptoSenha(text) {
 function trataTelefone(numeroTelefone) {
   var numeroTelefoneTexto = "";
   var numeroTelefoneTratado = "";
-  /*   console.log("Numero do telefone 01: ", numeroTelefone);
-  console.log("typeof: ", typeof(numeroTelefone)); */
 
   // se nao informou o numero retorna.
   if (!numeroTelefone.trim()) {
