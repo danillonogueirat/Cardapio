@@ -16,6 +16,8 @@ app.get('/ping',authenticate, ping)
 const rotaCadastroConta = require('./routes/cadastroConta');
 app.use('/cadastroConta', rotaCadastroConta);
 
+const oauth2 = require('./routes/oauth2');
+app.post('/oauth2', oauth2.oauth2);
 
 // Cria endpoint com a aplicação express
 exports.routes = firebase.functions
