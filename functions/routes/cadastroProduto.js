@@ -29,13 +29,14 @@ router.post("/", async (req, res, next) => {
 
   try {
     const insert = await pool.query(
-      "INSERT INTO produto (empresa, filial, nome, descricao, categoria, delete) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *",
+      "INSERT INTO produto (empresa, filial, nome, descricao, categoria, valor, delete) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
       [
         req.body.empresa,
         req.body.filial,
         req.body.nome,
         req.body.descricao,
         req.body.categoria,
+        req.body.valor,
         req.body.delete,
       ]
     );
