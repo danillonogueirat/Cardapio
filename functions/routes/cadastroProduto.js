@@ -21,9 +21,6 @@ router.get("/", (req, res, next) => {
     return res.status(400).json({ error });
   }
 });
-//https://www.section.io/engineering-education/javascript-dates-manipulation-with-date-fns/#:~:text=Date%2Dfns%20supports%20time%20zone,pm%20PST%20on%20a%20Node.
-/* let data2 = format(new Date(),'yyyy-MM-dd HH:mm:ss')
-console.log("Fora: "+data2) */
 
 // insere um novo produto
 router.post("/", async (req, res, next) => {
