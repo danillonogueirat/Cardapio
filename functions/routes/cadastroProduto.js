@@ -3,24 +3,32 @@ const router = express.Router();
 const pool = require("../postgres");
 
 // retorna todos os produtos da empresa
-router.get("/", (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
-    pool.query(
-      "SELECT id, created_at, empresa, filial, nome, descricao, categoria, delete FROM produto WHERE delete = false AND empresa = $1 AND filial = $2",
-      [req.query.empresa],
-      [req.query.field],
-      (error, resultado) => {
-        if (error) {
-          console.log("Erro aqui: ", error);
-          throw error;
-        }
-        return res.status(200).json(resultado.rows);
-      }
+    const { empresa, filial } = req.query;
+
+    // Validação de parâmetros
+    if (!empresa || !filial) {
+      return res.status(400).json({ error: "Os parâmetros empresa e filial são obrigatórios." });
+    }
+
+    const seleciona = await pool.query(
+      "SELECT id, created_at, empresa, filial, nome, descricao, categoria, valor, delete FROM produto WHERE delete = false AND empresa = $1 AND filial = $2",
+      [empresa, filial]
     );
+
+    // Certifique-se de que a consulta foi bem-sucedida
+    if (!seleciona || !seleciona.rows) {
+      return res.status(404).json({ error: "Nenhum produto encontrado." });
+    }
+
+    return res.status(200).json(seleciona.rows);
   } catch (error) {
-    return res.status(400).json({ error });
+    console.error("Erro na rota /produtos:", error);
+    return res.status(500).json({ error: "Erro interno do servidor." });
   }
 });
+
 
 // insere um novo produto
 router.post("/", async (req, res, next) => {
