@@ -7,24 +7,24 @@ router.get("/", async (req, res, next) => {
   try {
     const { empresa, filial } = req.query;
 
-    // Validação de parâmetros
+    // valida se estão vazioss
     if (!empresa || !filial) {
       return res.status(400).json({ error: "Os parâmetros empresa e filial são obrigatórios." });
     }
 
     const seleciona = await pool.query(
-      "SELECT id, created_at, empresa, filial, nome, descricao, categoria, valor, delete FROM produto WHERE delete = false AND empresa = $1 AND filial = $2",
+      "SELECT id, created_at, empresa, filial, nome, descricao, categoria, valor, delete, url_image FROM produto WHERE delete = false AND empresa = $1 AND filial = $2",
       [empresa, filial]
     );
 
-    // Certifique-se de que a consulta foi bem-sucedida
+    
     if (!seleciona || !seleciona.rows) {
       return res.status(404).json({ error: "Nenhum produto encontrado." });
     }
 
     return res.status(200).json(seleciona.rows);
   } catch (error) {
-    console.error("Erro na rota /produtos:", error);
+    console.error("Erro na rota /cadastroProduto:", error);
     return res.status(500).json({ error: "Erro interno do servidor." });
   }
 });
